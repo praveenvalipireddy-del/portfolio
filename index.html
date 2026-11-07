@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Praveen Workflow Portfolio</title>
+<meta name="description" content="Praveen Valipireddy, AI Automation Engineer: n8n, large language models and Python.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: the page is an automation editor's canvas. A dot grid, nodes joined by wires, and in the
+   opening the ATS drawn as five layers stacked in 3D. Amber marks the one step a person owns. Dark by choice. */
+:root {
+  --bg: #0d1016;
+  --panel: #151a23;
+  --ink: #e7eaf0;
+  --muted: #8d97a9;
+  --wire: #2a3343;
+  --amber: #ffb547;
+  --blue: #7aa7ff;
+  --display: "Bricolage Grotesque", "Segoe UI", sans-serif;
+  --body: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; color: var(--ink); font: 400 16.5px/1.65 var(--body); overflow-x: hidden;
+  background: radial-gradient(circle at 1px 1px, #232a36 1px, transparent 1.4px) 0 0 / 22px 22px, var(--bg); }
+a { color: var(--ink); text-decoration-color: var(--amber); text-underline-offset: 3px; }
+a:hover { color: var(--amber); }
+:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; border-radius: 4px; }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; }
+p { margin: 0; }
+.wrap { width: min(1140px, 100% - 40px); margin-inline: auto; }
+.mono { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+.tag { font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+
+.bar { position: sticky; top: 0; z-index: 9; background: rgba(13, 16, 22, .82); backdrop-filter: blur(10px); border-bottom: 1px solid var(--wire); }
+.bar .wrap { display: flex; align-items: center; justify-content: space-between; height: 54px; gap: 16px; }
+.bar b { font-family: var(--mono); font-weight: 500; font-size: 14px; }
+.bar b i { font-style: normal; color: var(--amber); }
+.bar nav { display: flex; gap: 18px; }
+.bar nav a { text-decoration: none; font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+.bar nav a:hover { color: var(--ink); }
+
+/* opening */
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: center; padding: 60px 0 30px; }
+.hero .copy { display: grid; gap: 22px; }
+.status { display: inline-flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 12.5px; color: var(--muted); border: 1px solid var(--wire); background: var(--panel); border-radius: 999px; padding: 5px 12px; width: fit-content; }
+.status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #3ccf91; box-shadow: 0 0 0 3px rgba(60, 207, 145, .18); }
+.hero h1 { font-size: clamp(38px, 5vw, 64px); font-weight: 800; line-height: 1.02; letter-spacing: -.02em; }
+.hero h1 span { color: var(--amber); }
+.lede { color: var(--muted); font-size: 18px; max-width: 54ch; }
+.lede b { color: var(--ink); font-weight: 600; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.btn { font: 500 14px var(--mono); text-decoration: none; padding: 10px 16px; border-radius: 10px; border: 1px solid var(--wire); background: var(--panel); }
+.btn.go { background: var(--amber); border-color: var(--amber); color: #1a1406; }
+.btn.go:hover { color: #1a1406; filter: brightness(1.08); }
+.btn:not(.go):hover { border-color: var(--amber); }
+
+/* the ATS as stacked layers in 3D */
+.iso { position: relative; height: 470px; perspective: 1600px; display: grid; place-items: center; }
+.stack { position: relative; width: 310px; height: 104px; margin-top: 150px; transform-style: preserve-3d; transform: rotateX(57deg) rotateZ(-36deg); animation: sway 9s ease-in-out infinite; }
+.layer { position: absolute; inset: 0; border-radius: 14px; border: 1px solid var(--wire); background: rgba(21, 26, 35, .93);
+  transform: translateZ(calc(var(--i) * var(--gap, 66px))); transition: transform .5s cubic-bezier(.2, .8, .2, 1); padding: 10px 14px; display: grid; align-content: start; gap: 1px;
+  box-shadow: 0 30px 40px -20px rgba(0, 0, 0, .6); }
+.iso:hover { --gap: 84px; }
+.layer b { font-family: var(--display); font-size: 17px; line-height: 1.2; font-weight: 700; }
+.layer span { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.layer em { font-style: normal; font-family: var(--mono); font-size: 10.5px; color: var(--blue); }
+.layer.you { border-color: var(--amber); background: rgba(58, 42, 14, .95); }
+.layer.you em { color: var(--amber); }
+.pin { position: absolute; right: 14px; top: 14px; width: 9px; height: 9px; border-radius: 50%; background: var(--blue); box-shadow: 0 0 12px var(--blue); }
+.layer.you .pin { background: var(--amber); box-shadow: 0 0 14px var(--amber); }
+.iso .note { position: absolute; bottom: 4px; left: 0; right: 0; display: flex; justify-content: space-between; }
+@keyframes sway { 50% { transform: rotateX(54deg) rotateZ(-30deg); } }
+
+/* numbers as node outputs */
+.outs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.out { background: var(--panel); border: 1px solid var(--wire); border-radius: 14px; padding: 16px 18px; display: grid; gap: 2px; }
+.out strong { font-family: var(--display); font-size: 38px; font-weight: 800; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.out strong i { font-style: normal; color: var(--amber); }
+.out span { font-size: 13.5px; color: var(--muted); }
+
+/* sections */
+section { padding: 76px 0 4px; }
+.head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 24px; flex-wrap: wrap; }
+.head h2 { font-size: clamp(28px, 3.8vw, 42px); font-weight: 800; letter-spacing: -.01em; }
+
+/* project nodes joined by a wire */
+.graph { position: relative; display: grid; gap: 26px; padding-left: 34px; }
+.graph::before { content: ""; position: absolute; left: 11px; top: 30px; bottom: 30px; width: 2px; background: repeating-linear-gradient(var(--wire) 0 8px, transparent 8px 14px); }
+.node { position: relative; background: var(--panel); border: 1px solid var(--wire); border-radius: 18px; overflow: hidden; transition: transform .3s, border-color .3s; }
+.node:hover { transform: translateY(-3px); border-color: #3a4558; }
+.node::before { content: ""; position: absolute; left: -29px; top: 28px; width: 14px; height: 14px; border-radius: 50%; background: var(--bg); border: 2px solid var(--blue); }
+.nh { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 18px; border-bottom: 1px solid var(--wire); background: rgba(255, 255, 255, .02); }
+.nh .who { display: flex; align-items: center; gap: 10px; }
+.ico { width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center; font: 600 12px var(--mono); background: rgba(122, 167, 255, .14); color: var(--blue); }
+.nb { padding: 20px 18px 22px; display: grid; gap: 14px; }
+.nb h3 { font-size: clamp(21px, 2.4vw, 27px); font-weight: 700; line-height: 1.2; }
+.nb .sum { color: var(--muted); max-width: 66ch; }
+.steps { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-family: var(--mono); font-size: 12px; }
+.steps span { padding: 4px 9px; border: 1px solid var(--wire); border-radius: 6px; background: var(--bg); }
+.steps span.you { border-color: var(--amber); color: var(--amber); }
+.steps i { font-style: normal; color: var(--muted); }
+.pts { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 26px; }
+.pts li { position: relative; padding-left: 16px; font-size: 15px; color: #c9cfda; }
+.pts li::before { content: ""; position: absolute; left: 0; top: .66em; width: 6px; height: 6px; border-radius: 2px; background: var(--blue); }
+.pts b { color: var(--ink); font-weight: 600; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-family: var(--mono); font-size: 11.5px; padding: 3px 8px; border-radius: 6px; background: rgba(122, 167, 255, .08); color: #b9c8e6; border: 1px solid rgba(122, 167, 255, .16); }
+
+/* project screenshots */
+.shots { display: grid; gap: 12px; }
+.shots.ats { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+.shots.shop { grid-template-columns: minmax(0, 1.8fr) repeat(3, minmax(0, .55fr)); align-items: end; }
+.shots .col { display: grid; gap: 12px; align-content: start; }
+.shots figure { margin: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.shots figcaption { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+.win { border: 1px solid var(--wire); border-radius: 10px; overflow: hidden; background: #0a0d12; }
+.win::before { content: ""; display: block; height: 20px; border-bottom: 1px solid var(--wire);
+  background-image: radial-gradient(circle at 10px 10px, #ff6b5e 3px, transparent 3.5px), radial-gradient(circle at 22px 10px, #ffb547 3px, transparent 3.5px), radial-gradient(circle at 34px 10px, #3ccf91 3px, transparent 3.5px); background-repeat: no-repeat; }
+.win img, .ph img { display: block; width: 100%; height: auto; }
+.ph { border: 5px solid #2a3343; border-radius: 20px; overflow: hidden; aspect-ratio: 9 / 17; background: #000; max-width: 100%; }
+.ph img { height: 100%; object-fit: cover; }
+.pill { font-family: var(--mono); font-size: 10.5px; padding: 2px 7px; border-radius: 5px; align-self: flex-start; border: 1px solid var(--wire); color: var(--muted); }
+.pill.ai { border-color: var(--blue); color: var(--blue); }
+.pill.real { border-color: var(--amber); color: var(--amber); }
+.shots .wide { grid-column: 1 / -1; }
+.shots .wide .win img { max-height: 720px; object-fit: contain; background: #fff; }
+
+[hidden] { display: none !important; }
+/* project cards + detail views */
+.pgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.pcard { display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--wire); border-radius: 16px; overflow: hidden; text-decoration: none; color: var(--ink); transition: transform .25s, border-color .25s; }
+.pcard:hover { transform: translateY(-4px); border-color: var(--amber); color: var(--ink); }
+.pcover { aspect-ratio: 16 / 10; background: #0a0d12; border-bottom: 1px solid var(--wire); overflow: hidden; display: grid; place-items: center; }
+.pcover img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+.pcover img.flowimg { object-fit: contain; background: #fff; }
+.flowcover { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center; padding: 16px; font-family: var(--mono); font-size: 12px; background: radial-gradient(circle at 1px 1px, #232a36 1px, transparent 1.4px) 0 0 / 16px 16px; width: 100%; height: 100%; }
+.flowcover span { padding: 5px 9px; border: 1px solid var(--wire); border-radius: 6px; background: var(--bg); }
+.flowcover span.you { border-color: var(--amber); color: var(--amber); }
+.flowcover i { font-style: normal; color: var(--muted); }
+.pbody { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.pbody h3 { font-size: 20px; font-weight: 700; line-height: 1.2; }
+.pbody p { color: var(--muted); font-size: 14.5px; }
+.pbody .open { margin-top: auto; font-family: var(--mono); font-size: 12.5px; color: var(--amber); }
+.detail { padding: 40px 0 10px; display: grid; gap: 20px; }
+.detail h2 { font-size: clamp(30px, 4.6vw, 52px); font-weight: 800; line-height: 1.05; letter-spacing: -.01em; max-width: 22ch; }
+.detail .back { font-family: var(--mono); font-size: 13px; color: var(--muted); text-decoration: none; width: fit-content; }
+.detail .back:hover { color: var(--amber); }
+.detail .links { display: flex; flex-wrap: wrap; gap: 16px; font-weight: 600; }
+.star { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.star > div, .act, .res { background: var(--panel); border: 1px solid var(--wire); border-radius: 14px; padding: 18px; display: grid; gap: 12px; align-content: start; }
+.res { border-color: var(--amber); }
+.res p { font-size: 17px; }
+
+
+/* experience log */
+.log { border: 1px solid var(--wire); border-radius: 16px; background: var(--panel); overflow: hidden; }
+.row { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 18px; padding: 18px 20px; border-top: 1px solid var(--wire); }
+.row:first-child { border-top: 0; }
+.row .when { font-family: var(--mono); font-size: 12.5px; color: var(--amber); padding-top: 3px; font-variant-numeric: tabular-nums; }
+.row h3 { font-size: 18px; font-weight: 700; }
+.row h3 small { font-family: var(--body); font-weight: 400; font-size: 15px; color: var(--muted); }
+.row p { color: var(--muted); font-size: 15px; margin-top: 4px; }
+
+/* skills */
+.skills { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.sk { background: var(--panel); border: 1px solid var(--wire); border-radius: 14px; padding: 16px; display: grid; gap: 10px; align-content: start; }
+.sk h3 { font-size: 15.5px; font-weight: 700; }
+
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.card { background: var(--panel); border: 1px solid var(--wire); border-radius: 14px; padding: 18px; display: grid; gap: 4px; align-content: start; }
+.card h3 { font-size: 17px; font-weight: 700; }
+.card p { color: var(--muted); font-size: 14.5px; }
+.card.cert { border-color: var(--amber); }
+
+.end { margin: 80px 0 0; padding: 36px; border: 1px solid var(--amber); border-radius: 22px; background: linear-gradient(140deg, rgba(255, 181, 71, .12), var(--panel) 60%); display: grid; gap: 18px; }
+.end h2 { font-size: clamp(28px, 4.4vw, 50px); font-weight: 800; line-height: 1.05; max-width: 18ch; }
+.end .lines { display: grid; gap: 4px; }
+.end .lines span { display: inline-block; min-width: 86px; font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+footer { padding: 26px 0 40px; }
+
+@media (max-width: 900px) {
+  .pgrid, .star { grid-template-columns: 1fr; }
+  .shots.ats, .shots.shop { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .shots .main { grid-column: 1 / -1; }
+  .hero { grid-template-columns: 1fr; padding-top: 34px; }
+  .iso { height: 400px; }
+  .stack { width: 250px; height: 96px; margin-top: 120px; }
+  .outs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pts, .skills, .two { grid-template-columns: 1fr; }
+  .row { grid-template-columns: 1fr; gap: 4px; }
+  .bar nav { display: none; }
+  .end { padding: 24px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .stack { animation: none; }
+  .layer, .node { transition: none; }
+}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="wrap">
+    <b>praveen<i>.</i>valipireddy</b>
+    <nav aria-label="Sections"><a href="#projects">projects</a><a href="#experience">experience</a><a href="#skills">skills</a><a href="#contact">contact</a></nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="hero">
+    <div class="copy">
+      <span class="status">AI Automation Engineer · Hyderabad, India</span>
+      <h1>I build AI workflows where the machine prepares and <span>a person decides.</span></h1>
+      <p class="lede"><b>2+ years in AI automation with n8n, large language models and Python.</b> Right now I'm building a multi-recruiter Applicant Tracking System that finds jobs, tailors resumes and drafts emails, with a recruiter approving every change.</p>
+      <div class="actions">
+        <a class="btn go" href="#projects">View projects</a>
+        <a class="btn" href="https://www.linkedin.com/in/valipireddy-praveen-770231196">LinkedIn</a>
+        <a class="btn" href="https://github.com/praveenvalipireddy-del">GitHub</a>
+      </div>
+    </div>
+    <div class="iso" aria-label="The ATS in five layers: job sources, match check, tailor resume, recruiter approves, send">
+      <div class="stack">
+        <div class="layer" style="--i:0"><span class="pin"></span><em>layer 1 · input</em><b>Job sources</b><span>Dice · LinkedIn · Indeed · Naukri · Foundit · 130 career sites</span></div>
+        <div class="layer" style="--i:1"><span class="pin"></span><em>layer 2</em><b>Match check</b><span>skills asked for vs. the resume</span></div>
+        <div class="layer" style="--i:2"><span class="pin"></span><em>layer 3 · Google Gemini</em><b>Tailor resume</b><span>Word formatting kept</span></div>
+        <div class="layer you" style="--i:3"><span class="pin"></span><em>layer 4 · a person</em><b>Recruiter approves</b><span>only approved changes go in</span></div>
+        <div class="layer" style="--i:4"><span class="pin"></span><em>layer 5 · output</em><b>Send</b><span>Gmail draft or career-site autofill</span></div>
+      </div>
+      <div class="note"><span class="tag">The ATS I'm building, layer by layer</span><span class="tag">Hover to open</span></div>
+    </div>
+  </div>
+
+  <div class="outs">
+    <div class="out"><strong>2<i>+</i></strong><span>years in AI automation</span></div>
+    <div class="out"><strong>130</strong><span>company career sites read for jobs</span></div>
+    <div class="out"><strong>65<i>%</i></strong><span>less screening time at O2 Technologies</span></div>
+    <div class="out"><strong>90</strong><span>automated test files behind the ATS</span></div>
+  </div>
+
+  <section id="projects">
+    <div class="head"><h2>Projects</h2><span class="tag">2 projects · open one for the full story</span></div>
+    <div class="pgrid">
+      <a class="pcard" href="#project-ats">
+        <div class="pcover"><img src="img/ats_changes.jpg" alt="Job Hunt resume tailoring screen" width="1024" height="638"></div>
+        <div class="pbody">
+          <span class="mono">Aventra AI · Sep 2026 – Present</span>
+          <h3>A recruiting ATS that tailors every submission</h3>
+          <p>One search across 5 job boards and 130 career sites, AI-tailored resumes that never invent skills, and Gmail drafts a recruiter approves.</p>
+          <div class="chips"><span class="chip">Python</span><span class="chip">Flask</span><span class="chip">Gemini</span><span class="chip">Chrome MV3</span></div>
+          <span class="open">Open project →</span>
+        </div>
+      </a>
+      <a class="pcard" href="#project-shop">
+        <div class="pcover"><img class="flowimg" src="img/n8n_workflow.jpg" alt="The n8n workflow behind the shop, in four coloured stages" width="1124" height="1200" loading="lazy"></div>
+        <div class="pbody">
+          <span class="mono">Handcrafted bridal business · 2026</span>
+          <h3>A shop that lists products and makes its own Reels</h3>
+          <p>The owner adds a product in one form. The website updates, and a Telugu or English Reel is made and posted to Instagram after she approves it.</p>
+          <div class="chips"><span class="chip">n8n</span><span class="chip">Gemini</span><span class="chip">ElevenLabs</span><span class="chip">Instagram API</span></div>
+          <span class="open">Open project →</span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <article class="detail" data-view="project-ats" hidden>
+    <a class="back" href="#projects">← All projects</a>
+    <span class="mono">Aventra AI · Sep 2026 – Present</span>
+    <h2>A recruiting ATS that tailors every submission</h2>
+    <p class="lede">A live, multi-recruiter Applicant Tracking System for US and India staffing teams, built end to end in Python and Flask.</p>
+    <div class="links"><a href="https://claude.ai/artifact/REQfjcFQJ9fQY5oYrog186" target="_blank" rel="noopener">See the product demo ↗</a></div>
+          <div class="shots ats">
+            <figure class="main"><div class="win"><img src="img/ats_changes.jpg" alt="Job Hunt screen where the recruiter ticks which suggested resume changes to apply, with skills marked backed by the resume or not proven" width="1024" height="638"></div><figcaption>Choose changes: the recruiter approves each one</figcaption></figure>
+            <div class="col">
+              <figure><div class="win"><img src="img/ats_match.jpg" alt="Match check screen showing a 62% match and skill-by-skill gaps against the job" width="1024" height="638" loading="lazy"></div><figcaption>Match check before any rewriting</figcaption></figure>
+              <figure><div class="win"><img src="img/ats_email.jpg" alt="Gmail draft screen answering the vendor's questions with the tailored resume attached" width="1024" height="640" loading="lazy"></div><figcaption>Gmail draft that answers the vendor</figcaption></figure>
+            </div>
+          </div>
+    <div class="star">
+      <div><span class="tag">Situation</span><p>Recruiters on staffing teams searched several job boards by hand, rewrote each consultant's resume for every job, and emailed vendors one at a time.</p></div>
+      <div><span class="tag">Task</span><p>Build one tool that finds matching jobs, tailors resumes without inventing anything, and prepares each submission, while the recruiter stays in control of what is sent.</p></div>
+    </div>
+    <div class="act"><span class="tag">Action</span>
+          <div class="steps"><span>Job sources</span><i>→</i><span>Match</span><i>→</i><span>Tailor</span><i>→</i><span class="you">Recruiter approves</span><i>→</i><span>Draft or autofill</span></div>
+          <ul class="pts">
+            <li><b>One job search</b> across Dice, LinkedIn, Indeed, Naukri and Foundit, plus 130 company career sites, filtered by each consultant's role, market and experience.</li>
+            <li><b>AI resume tailoring</b> with Google Gemini: a match check, then only the changes the recruiter approves, keeping the original Word formatting.</li>
+            <li><b>A safeguard</b> that blocks any technology the resume can't support, so the AI never invents skills.</li>
+            <li><b>Gmail drafts</b> from each consultant's own account with the tailored resume attached, plus vendor replies sorted with drafted answers.</li>
+            <li><b>A Chrome extension</b> (Manifest V3) that reads job pages, shows the match, tailors the resume and autofills career-site forms.</li>
+            <li><b>Sourcing and contacts</b> through Apify scrapers and the Apollo.io API, with each recruiter working under their own account.</li>
+          </ul>
+    </div>
+    <div class="res"><span class="tag">Result</span><p>A live multi-recruiter app on Render, with Dice, LinkedIn, Indeed, Naukri, Foundit and 130 company career sites in one search, 90 automated test files, and every submission reviewed by a person before it goes out.</p></div>
+          <div class="chips"><span class="chip">Python</span><span class="chip">Flask</span><span class="chip">PostgreSQL</span><span class="chip">Supabase</span><span class="chip">Google Gemini</span><span class="chip">Gmail API</span><span class="chip">Chrome Extension MV3</span><span class="chip">Apify</span><span class="chip">Apollo.io</span><span class="chip">Docker</span><span class="chip">Render</span><span class="chip">Playwright</span></div>
+    <a class="back" href="#projects">← All projects</a>
+  </article>
+
+  <article class="detail" data-view="project-shop" hidden>
+    <a class="back" href="#projects">← All projects</a>
+    <span class="mono">Handcrafted bridal business · 2026</span>
+    <h2>A shop that lists products, sells on WhatsApp and makes its own Reels</h2>
+    <p class="lede">A mobile-first storefront run by n8n on Docker, with AI-made Instagram Reels the owner approves before they go live.</p>
+    <div class="links"><a href="https://kalyanavaibhogam.netlify.app/" target="_blank" rel="noopener">Live website ↗</a><a href="https://www.instagram.com/kalyana_vaibhogam1990/" target="_blank" rel="noopener">Reels on Instagram ↗</a></div>
+          <div class="shots shop">
+            <figure class="wide top"><div class="win"><img src="img/n8n_workflow.jpg" alt="The n8n workflow in four coloured stages: add the product to the website, AI script and voiceover, make the video, review and post to Instagram" width="1124" height="1200" loading="lazy"></div><figcaption>The n8n workflow behind it: 4 stages, 33 nodes, with retry loops on every wait</figcaption></figure>
+            <figure class="main"><div class="win"><img src="img/shop_desktop.jpg" alt="Dhana Laxmi Bridal and Festive Crafts website home page with catalog and WhatsApp buttons" width="1200" height="750" loading="lazy"></div><figcaption>Storefront, desktop</figcaption></figure>
+            <figure><div class="ph"><img src="img/shop_mobile.jpg" alt="The same website on a phone" width="390" height="844" loading="lazy"></div><figcaption>Mobile</figcaption></figure>
+            <figure><span class="pill ai">AI scene</span><div class="ph"><img src="img/reel_ai.jpg" alt="AI-generated haldi decoration scene with decorated pots on a flower rangoli, used as the Reel opening" width="420" height="735" loading="lazy"></div><figcaption>Reel opening</figcaption></figure>
+            <figure><span class="pill real">Real product</span><div class="ph"><img src="img/kalash.jpg" alt="Photo of the actual decorated kalash pots for sale" width="420" height="560" loading="lazy"></div><figcaption>Shown in the Reel</figcaption></figure>
+          </div>
+    <div class="star">
+      <div><span class="tag">Situation</span><p>A small handcrafted bridal business needed code changes to add a product, and made and posted every Instagram video by hand.</p></div>
+      <div><span class="tag">Task</span><p>Let the owner add products and get promotional Reels from one simple form, without touching code, while she decides what gets posted.</p></div>
+    </div>
+    <div class="act"><span class="tag">Action</span>
+          <div class="steps"><span>Owner's web form</span><i>→</i><span>n8n</span><i>→</i><span>GitHub REST API</span><i>→</i><span>Netlify</span><i>→</i><span>Live site</span></div>
+          <ul class="pts">
+            <li><b>New products without code:</b> the owner fills a form, n8n uploads the photo and updates the catalog in GitHub, and Netlify deploys it.</li>
+            <li><b>A 24/7 WhatsApp AI sales assistant</b> that answers catalog questions, handles custom order details, quotes prices and takes orders.</li>
+            <li><b>Automated Reels:</b> Google Gemini writes the voiceover, caption and hashtags as JSON, ElevenLabs voices it and Creatomate renders the video.</li>
+            <li><b>Instagram publishing</b> through the Instagram Graph API, after the owner previews the Reel, edits the caption and approves it. Reels are live on the shop's Instagram.</li>
+          </ul>
+    </div>
+    <div class="res"><span class="tag">Result</span><p>Products go live on the website from a form. Reels with a Telugu or English voiceover are made automatically and published to Instagram after the owner approves them, and the first Reels are live on the shop's account.</p></div>
+          <div class="chips"><span class="chip">n8n</span><span class="chip">Docker</span><span class="chip">HTML5</span><span class="chip">CSS3</span><span class="chip">JavaScript</span><span class="chip">Netlify</span><span class="chip">GitHub REST API</span><span class="chip">WhatsApp Business API</span><span class="chip">Claude AI</span><span class="chip">Google Gemini</span><span class="chip">ElevenLabs</span><span class="chip">Creatomate</span><span class="chip">Instagram Graph API</span><span class="chip">Python</span><span class="chip">FFmpeg</span></div>
+    <a class="back" href="#projects">← All projects</a>
+  </article>
+
+  <section id="experience">
+    <div class="head"><h2>Experience</h2><span class="tag">Newest first</span></div>
+    <div class="log">
+      <div class="row"><span class="when">Sep 2026 – Present</span><div><h3>Developer, AI Automation <small>· Aventra AI</small></h3><p>Building the multi-recruiter ATS: job sourcing, AI resume tailoring, Gmail drafts and career-site autofill.</p></div></div>
+      <div class="row"><span class="when">Aug 2024 – Aug 2026</span><div><h3>AI Automation Engineer &amp; Web Developer <small>· O2 Technologies</small></h3><p>n8n and Claude pipelines for sourcing and screening, web dashboards and integration scripts, self-hosted on Docker.</p></div></div>
+    </div>
+  </section>
+
+  <section id="skills">
+    <div class="head"><h2>Skills</h2><span class="tag">What I work with</span></div>
+    <div class="skills">
+      <div class="sk"><h3>AI &amp; LLMs</h3><div class="chips"><span class="chip">Google Gemini API</span><span class="chip">Claude API</span><span class="chip">Claude Code</span><span class="chip">OpenAI GPT-4o</span><span class="chip">DeepSeek</span><span class="chip">Prompt engineering</span><span class="chip">Structured JSON outputs</span><span class="chip">Function calling</span><span class="chip">Agentic workflows</span><span class="chip">MCP</span></div></div>
+      <div class="sk"><h3>Automation &amp; integrations</h3><div class="chips"><span class="chip">n8n</span><span class="chip">Webhooks</span><span class="chip">Gmail (OAuth, IMAP)</span><span class="chip">Apify</span><span class="chip">Apollo.io API</span><span class="chip">WhatsApp Business API</span><span class="chip">Instagram Graph API</span><span class="chip">GitHub REST API</span><span class="chip">ElevenLabs</span><span class="chip">Creatomate</span></div></div>
+      <div class="sk"><h3>Backend &amp; data</h3><div class="chips"><span class="chip">Python</span><span class="chip">Flask</span><span class="chip">FastAPI</span><span class="chip">Gunicorn</span><span class="chip">Node.js</span><span class="chip">REST APIs</span><span class="chip">PostgreSQL</span><span class="chip">Supabase</span><span class="chip">SQLite</span><span class="chip">Pandas</span><span class="chip">NumPy</span></div></div>
+      <div class="sk"><h3>Web &amp; extensions</h3><div class="chips"><span class="chip">HTML5</span><span class="chip">CSS3</span><span class="chip">JavaScript (ES6+)</span><span class="chip">Single page apps</span><span class="chip">Chrome Extensions (MV3)</span><span class="chip">Responsive design</span></div></div>
+      <div class="sk"><h3>DevOps</h3><div class="chips"><span class="chip">Docker</span><span class="chip">Docker Compose</span><span class="chip">Render</span><span class="chip">Netlify CI/CD</span><span class="chip">Linux self-hosting</span><span class="chip">Git / GitHub</span><span class="chip">Playwright tests</span></div></div>
+      <div class="sk"><h3>Documents &amp; media</h3><div class="chips"><span class="chip">python-docx</span><span class="chip">pypdf</span><span class="chip">openpyxl</span><span class="chip">BeautifulSoup</span><span class="chip">FFmpeg</span><span class="chip">Pillow</span></div></div>
+    </div>
+  </section>
+
+  <section id="education">
+    <div class="head"><h2>Education &amp; certificate</h2></div>
+    <div class="two">
+      <div class="card cert"><span class="tag">Mar 2026 · Anthropic</span><h3>Claude Code in Action</h3><p>Certificate of Completion. <a href="https://verify.skilljar.com/c/xfspw2gzbkre">Verify the certificate</a></p></div>
+      <div class="card"><span class="tag">2020 – 2022</span><h3>Master of Business Administration (MBA)</h3><p>Vishwa Vishwani College</p><span class="tag" style="margin-top:10px">2019</span><h3>Bachelor of Business Management (BBM)</h3><p>Chaitanya Degree College</p></div>
+    </div>
+  </section>
+
+  <div class="end" id="contact">
+    <span class="tag">Contact</span>
+    <h2>Have a manual process that AI could run? Let's talk.</h2>
+    <div class="lines">
+      <div><span>email</span><a href="mailto:praveen.ai7075@gmail.com">praveen.ai7075@gmail.com</a></div>
+      <div><span>linkedin</span><a href="https://www.linkedin.com/in/valipireddy-praveen-770231196">linkedin.com/in/valipireddy-praveen-770231196</a></div>
+      <div><span>github</span><a href="https://github.com/praveenvalipireddy-del">github.com/praveenvalipireddy-del</a></div>
+    </div>
+  </div>
+</main>
+<footer class="wrap mono">Praveen Valipireddy · AI Automation Engineer · Hyderabad, India</footer>
+<script>
+(function(){
+  var main=document.querySelector('main');
+  function route(){
+    var h=location.hash.slice(1), view=h && main.querySelector('.detail[data-view="'+h+'"]');
+    Array.prototype.forEach.call(main.children,function(el){
+      if(el.classList.contains('detail')) el.hidden = el!==view;
+      else el.hidden = !!view;
+    });
+    if(view){ window.scrollTo(0,0); }
+    else if(h){ var t=document.getElementById(h); if(t) t.scrollIntoView(); }
+  }
+  window.addEventListener('hashchange',route); route();
+})();
+</script>
+
+</body>
+</html>
